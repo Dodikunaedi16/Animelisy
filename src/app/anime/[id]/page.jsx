@@ -10,17 +10,54 @@ import CommentBox from "@/Components/AnimeTrailer/CommentBox";
 const Page = async ({ params }) => {
   const { id } = params;
 
-  const anime = await getAnimeRespons(`anime/${id}`);
-  const user = await autUserSession();
-
-  const collection = await prisma.collection.findFirst({
-    where: {
-      user_email: user?.email,
-      anime_mal_id: id,
-    },
-  });
+  // Ambil data anime
+  let anime = null;
+  try {
+    anime = await getAnimeRespons(`anime/${id}`);
+  } catch (err) {
+    console.error("Gagal mengambil data anime:", err);
+    return (
+      <div className="p-6">
+        <h1 className="text-xl font-bold text-red-500">
+          Terjadi kesalahan saat memuat anime.
+        </h1>
+      </div>
+    );
+  }
 
   const data = anime?.data;
+  if (!data) {
+    return (
+      <div className="p-6">
+        <h1 className="text-xl font-bold text-yellow-500">
+          Anime tidak ditemukan.
+        </h1>
+      </div>
+    );
+  }
+
+  // Ambil session user
+  let user = null;
+  try {
+    user = await autUserSession();
+  } catch (err) {
+    console.error("Gagal mengambil session user:", err);
+  }
+
+  // Ambil data koleksi dari database
+  let collection = null;
+  if (user?.email) {
+    try {
+      collection = await prisma.collection.findFirst({
+        where: {
+          user_email: user.email,
+          anime_mal_id: id,
+        },
+      });
+    } catch (err) {
+      console.error("Gagal mengambil koleksi:", err);
+    }
+  }
 
   return (
     <>
@@ -81,6 +118,7 @@ const Page = async ({ params }) => {
   );
 };
 
+// Komponen InfoCard tetap sama
 const InfoCard = ({ title, value }) => (
   <div className="min-w-[90px] text-center rounded border border-white p-2 bg-gray-800 text-white shadow-sm">
     <h3 className="text-xs font-semibold uppercase">{title}</h3>
